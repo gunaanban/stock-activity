@@ -1,0 +1,1179 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Ledger — Stock Watchlist</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#0F1613;
+    --panel:#182420;
+    --panel-raised:#1E2C27;
+    --hairline:#33443C;
+    --paper:#EDE6D6;
+    --paper-dim:#B9B2A0;
+    --gold:#C9A24B;
+    --gold-dim:#8A7239;
+    --rust:#A83C2B;
+    --rust-dim:#7A2C20;
+    --moss:#7C9473;
+    --moss-dim:#57694F;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    min-height:100vh;
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(201,162,75,0.06), transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(124,148,115,0.05), transparent 40%);
+  }
+  ::selection{background:var(--gold);color:var(--ink);}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* Header */
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--hairline);
+    padding-bottom:18px;margin-bottom:22px;
+    gap:16px;flex-wrap:wrap;
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;
+    color:var(--gold-dim);text-transform:uppercase;margin-bottom:6px;
+  }
+  h1.brand{
+    font-family:'Fraunces',serif;font-weight:600;font-size:clamp(28px,4vw,40px);
+    margin:0;letter-spacing:-0.01em;color:var(--paper);
+  }
+  h1.brand em{color:var(--gold);font-style:italic;}
+  .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--paper-dim);margin-top:6px;}
+
+  .gear-btn{
+    background:transparent;border:1px solid var(--hairline);color:var(--paper-dim);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;
+    padding:9px 14px;border-radius:3px;cursor:pointer;transition:all .15s ease;
+    text-transform:uppercase;
+  }
+  .gear-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+  /* Tabs */
+  nav.tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--hairline);}
+  nav.tabs button{
+    background:transparent;border:none;color:var(--paper-dim);
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:11px 4px;margin-right:26px;cursor:pointer;position:relative;
+    border-bottom:2px solid transparent;transition:color .15s ease;
+  }
+  nav.tabs button:hover{color:var(--paper);}
+  nav.tabs button.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* Tally strip - signature element */
+  .tally{
+    display:flex;gap:0;margin-bottom:28px;border:1px solid var(--hairline);
+    border-radius:4px;overflow:hidden;background:var(--panel);
+  }
+  .tally .cell{
+    flex:1;padding:16px 18px;position:relative;
+    border-right:1px solid var(--hairline);
+  }
+  .tally .cell:last-child{border-right:none;}
+  .tally .cell .num{
+    font-family:'Fraunces',serif;font-size:32px;font-weight:600;line-height:1;
+  }
+  .tally .cell .lbl{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--paper-dim);margin-top:6px;display:block;
+  }
+  .tally .cell.buy .num{color:var(--gold);}
+  .tally .cell.sell .num{color:var(--rust);}
+  .tally .cell.hold .num{color:var(--moss);}
+
+  /* Cards grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .card{
+    background:var(--panel);border:1px solid var(--hairline);border-radius:5px;
+    padding:20px;position:relative;overflow:hidden;transition:border-color .15s ease;
+  }
+  .card:hover{border-color:#44584E;}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+  .ticker{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--paper);}
+  .name{font-family:'Inter';font-size:12px;color:var(--paper-dim);margin-top:2px;}
+
+  .stamp{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.1em;
+    padding:5px 10px;border:2px solid; border-radius:3px; text-transform:uppercase;
+    transform:rotate(-4deg); white-space:nowrap;
+  }
+  .stamp.buy{color:var(--gold);border-color:var(--gold);text-shadow:0 0 8px rgba(201,162,75,.35);}
+  .stamp.sell{color:var(--rust);border-color:var(--rust);text-shadow:0 0 8px rgba(168,60,43,.35);}
+  .stamp.hold{color:var(--moss);border-color:var(--moss);text-shadow:0 0 8px rgba(124,148,115,.35);}
+  .stamp.pending{color:var(--paper-dim);border-color:var(--hairline);transform:none;}
+
+  .price-row{margin:14px 0;}
+  .price-row .price{font-family:'Fraunces',serif;font-size:30px;font-weight:500;}
+  .price-row .price.err{font-size:14px;font-family:'IBM Plex Mono',monospace;color:var(--rust-dim);}
+  .fetched-at{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--paper-dim);margin-top:2px;}
+
+  .thresholds{
+    display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--paper-dim);border-top:1px solid var(--hairline);
+    padding-top:12px;margin-top:12px;
+  }
+  .thresholds .t{display:flex;flex-direction:column;gap:2px;}
+  .thresholds .t span:first-child{text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;}
+  .thresholds .t b{color:var(--paper);font-size:13px;font-weight:500;}
+  .thresholds .t.right{text-align:right;align-items:flex-end;}
+
+  .updated-line{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--paper-dim);opacity:.7;margin-top:10px;}
+
+  .card-actions{display:flex;gap:8px;margin-top:14px;}
+  .mini-btn{
+    flex:1;background:transparent;border:1px solid var(--hairline);color:var(--paper-dim);
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    padding:7px 8px;border-radius:3px;cursor:pointer;transition:all .15s ease;
+  }
+  .mini-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+  .empty{
+    text-align:center;padding:70px 20px;color:var(--paper-dim);
+    border:1px dashed var(--hairline);border-radius:6px;
+  }
+  .empty .big{font-family:'Fraunces',serif;font-size:20px;color:var(--paper);margin-bottom:8px;}
+  .empty p{font-family:'Inter';font-size:13px;line-height:1.6;max-width:420px;margin:0 auto 18px;}
+
+  /* Manage view - form + list */
+  .manage-layout{display:grid;grid-template-columns:340px 1fr;gap:24px;}
+  @media (max-width:800px){.manage-layout{grid-template-columns:1fr;}}
+
+  .panel-box{background:var(--panel);border:1px solid var(--hairline);border-radius:5px;padding:22px;}
+  .panel-box h2{
+    font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin:0 0 18px;color:var(--paper);
+  }
+  label{
+    display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--paper-dim);margin-bottom:6px;margin-top:16px;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type=text],input[type=number],input[type=password]{
+    width:100%;background:var(--ink);border:1px solid var(--hairline);border-radius:3px;
+    padding:10px 12px;color:var(--paper);font-family:'Inter';font-size:14px;
+  }
+  input:focus{outline:none;border-color:var(--gold-dim);}
+  .hint{font-size:10.5px;color:var(--paper-dim);margin-top:5px;font-family:'Inter';line-height:1.5;}
+
+  .primary-btn{
+    width:100%;margin-top:22px;background:var(--gold);color:var(--ink);border:none;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    font-weight:600;padding:12px;border-radius:3px;cursor:pointer;transition:opacity .15s ease;
+  }
+  .primary-btn:hover{opacity:.88;}
+  .secondary-btn{
+    width:100%;margin-top:10px;background:transparent;color:var(--paper-dim);border:1px solid var(--hairline);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    padding:11px;border-radius:3px;cursor:pointer;
+  }
+  .secondary-btn:hover{color:var(--paper);}
+
+  table{width:100%;border-collapse:collapse;}
+  thead th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--paper-dim);border-bottom:1px solid var(--hairline);
+    padding:0 10px 10px;font-weight:500;
+  }
+  tbody td{
+    padding:14px 10px;border-bottom:1px solid var(--hairline);font-family:'Inter';font-size:13.5px;
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td.sym{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--paper);}
+  td.num{font-family:'IBM Plex Mono',monospace;color:var(--paper-dim);}
+  td.ts{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--paper-dim);}
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{
+    background:transparent;border:1px solid var(--hairline);color:var(--paper-dim);
+    padding:5px 10px;border-radius:3px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    text-transform:uppercase;
+  }
+  .icon-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+  .icon-btn.danger:hover{border-color:var(--rust);color:var(--rust);}
+
+  /* Modal */
+  .overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .overlay.active{display:flex;}
+  .modal{
+    background:var(--panel-raised);border:1px solid var(--hairline);border-radius:6px;
+    padding:26px;max-width:420px;width:100%;
+  }
+  .modal h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 4px;}
+  .modal .sub2{font-family:'Inter';font-size:12.5px;color:var(--paper-dim);margin-bottom:18px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions .primary-btn,.modal-actions .secondary-btn{margin-top:0;}
+  .toggle-visibility{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--gold-dim);cursor:pointer;
+    margin-top:6px;display:inline-block;
+  }
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--panel-raised);border:1px solid var(--hairline);color:var(--paper);
+    padding:12px 20px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+    z-index:60;opacity:0;transition:opacity .25s ease;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+
+  .refresh-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .refresh-bar .note{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--paper-dim);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand-eyebrow">Buy low · Hold steady · Sell high</div>
+      <h1 class="brand">The <em>Ledger</em></h1>
+      <div class="sub">a coffee-can stock watchlist</div>
+    </div>
+    <button class="gear-btn" id="settingsBtn">⚙ Settings</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-view="dashboard">Watchlist</button>
+    <button class="tab-btn" data-view="manage">Manage Stocks</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <section class="view active" id="view-dashboard">
+    <div class="tally" id="tally" style="display: flex;">
+      <div class="cell buy"><span class="num" id="tallyBuy">3</span><span class="lbl">Buy signal</span></div>
+      <div class="cell hold"><span class="num" id="tallyHold">10</span><span class="lbl">Coffee can</span></div>
+      <div class="cell sell"><span class="num" id="tallySell">3</span><span class="lbl">Sell signal</span></div>
+    </div>
+
+    <div class="refresh-bar" id="refreshBar" style="display: flex;">
+      <span class="note" id="refreshNote">Live prices via Twelve Data</span>
+      <button class="mini-btn" style="flex:none;padding:9px 16px;" id="refreshAllBtn">↻ Refresh all</button>
+    </div>
+
+    <div id="dashGrid" class="grid"><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">EASEMYTRIP.NS</div>
+          <div class="name">Ease my trip NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">6.90</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>6.80</b></div>
+        <div class="t right"><span>Max reach</span><b>8.12</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:05 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="1958433f-9b6b-4967-ac67-afc512b091c6">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">GOLDBEES.NS</div>
+          <div class="name">GOLDBEES NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">118.14</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>118.00</b></div>
+        <div class="t right"><span>Max reach</span><b>124.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:06 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="6a517186-3c22-4fd4-b9fc-c4a57b8d9438">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">HCC.NS</div>
+          <div class="name">HCC NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">23.89</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>21.00</b></div>
+        <div class="t right"><span>Max reach</span><b>27.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:14 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="d4f3c8e1-9e4e-47c8-8b67-fa9dedddbb24">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">IDEA.NS</div>
+          <div class="name">IDEA NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">14.19</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>10.95</b></div>
+        <div class="t right"><span>Max reach</span><b>18.23</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 12, 09:24 PM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="7d237be2-bb37-4ad2-9aa5-b58125853ae1">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">IDFCFIRSTB.NS</div>
+          <div class="name">IDFC FIRST BANK NSE</div>
+        </div>
+        <span class="stamp sell">Sell</span>
+      </div>
+      <div class="price-row">
+        <div class="price">80.83</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>64.00</b></div>
+        <div class="t right"><span>Max reach</span><b>80.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:09 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="c91be6e0-4afe-4cdc-9337-37f9806bbbb1">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">ITBEES.NS</div>
+          <div class="name">IT bees NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">31.04</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>30.84</b></div>
+        <div class="t right"><span>Max reach</span><b>40.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:02 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="42dc56d6-8731-4e84-a7a2-3168469a1870">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">ITC.NS</div>
+          <div class="name">ITC NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">281.75</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>281.00</b></div>
+        <div class="t right"><span>Max reach</span><b>347.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:04 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="4743e47a-0b21-4695-ac1c-db5c9bee3ee3">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">KTKBANK.NS</div>
+          <div class="name">KTKBANK NSE</div>
+        </div>
+        <span class="stamp sell">Sell</span>
+      </div>
+      <div class="price-row">
+        <div class="price">276.35</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>206.00</b></div>
+        <div class="t right"><span>Max reach</span><b>219.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:12 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="e8863082-d4f5-4abd-b995-c67df4929c22">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">MANAPPURAM.NS</div>
+          <div class="name">Manappuram NSE</div>
+        </div>
+        <span class="stamp sell">Sell</span>
+      </div>
+      <div class="price-row">
+        <div class="price">341.30</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>293.00</b></div>
+        <div class="t right"><span>Max reach</span><b>319.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:10 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="26f80a22-49cd-4726-8a1c-986426b8d57c">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">MOTHERSON.NS</div>
+          <div class="name">Motherson NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">143.19</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>142.00</b></div>
+        <div class="t right"><span>Max reach</span><b>153.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:03 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="114bdd47-03cb-42ce-a12d-5674ce491a85">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">NATCOPHARM.NS</div>
+          <div class="name">Natco Pharm NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">984.10</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>810.00</b></div>
+        <div class="t right"><span>Max reach</span><b>1,200.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:11 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="99e9c8ee-be20-4b77-853a-84432fcc2202">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">RTNINDIA.NS</div>
+          <div class="name">RTNINDIA NSE</div>
+        </div>
+        <span class="stamp buy">Buy</span>
+      </div>
+      <div class="price-row">
+        <div class="price">33.57</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>33.80</b></div>
+        <div class="t right"><span>Max reach</span><b>39.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:04 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="263a4b2a-6a3b-4e3d-ae6b-940fe866000c">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">SILVERBEES.NS</div>
+          <div class="name">Silverbees NSE</div>
+        </div>
+        <span class="stamp buy">Buy</span>
+      </div>
+      <div class="price-row">
+        <div class="price">208.83</div>
+        <div class="fetched-at">fetched Jul 13, 01:19 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>218.00</b></div>
+        <div class="t right"><span>Max reach</span><b>254.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:18 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="db2569ee-bead-40db-bf03-92e9f43a408d">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">SOUTHBANK.NS</div>
+          <div class="name">South indian bank NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">45.81</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>42.00</b></div>
+        <div class="t right"><span>Max reach</span><b>48.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:13 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="c5541093-30d4-40c0-98ad-03f47398747e">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">TEJASNET.NS</div>
+          <div class="name">Tejas net NSE</div>
+        </div>
+        <span class="stamp hold">Coffee can</span>
+      </div>
+      <div class="price-row">
+        <div class="price">564.65</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>400.00</b></div>
+        <div class="t right"><span>Max reach</span><b>600.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 01:07 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="a398f484-1284-4c2b-a2b6-ec187e7b79db">↻ Refresh</button>
+      </div>
+    </div><div class="card">
+      <div class="card-top">
+        <div>
+          <div class="ticker">WIPRO.NS</div>
+          <div class="name">WIPRO NSE</div>
+        </div>
+        <span class="stamp buy">Buy</span>
+      </div>
+      <div class="price-row">
+        <div class="price">175.46</div>
+        <div class="fetched-at">fetched Jul 13, 01:18 AM</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>185.00</b></div>
+        <div class="t right"><span>Max reach</span><b>250.00</b></div>
+      </div>
+      <div class="updated-line">record updated Jul 13, 12:59 AM</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="d116c32d-b394-4476-b21a-2d8c9cfa34c4">↻ Refresh</button>
+      </div>
+    </div></div>
+    <div class="empty" id="dashEmpty" style="display:none;">
+      <div class="big">Nothing on the ledger yet</div>
+      <p>Add a stock with its buy and sell thresholds, then come back here to see live signals.</p>
+      <button class="primary-btn" style="width:auto;padding:10px 20px;" id="emptyAddBtn">+ Add your first stock</button>
+    </div>
+  </section>
+
+  <!-- MANAGE -->
+  <section class="view" id="view-manage">
+    <div class="manage-layout">
+      <div class="panel-box">
+        <h2 id="formTitle">Add a stock</h2>
+        <form id="stockForm">
+          <input type="hidden" id="stockId">
+          <label for="symbol">Ticker / symbol</label>
+          <input type="text" id="symbol" placeholder="e.g. AAPL or RELIANCE:NSE" required="">
+          <div class="hint">Must match the symbol format your price provider expects (see Settings).</div>
+
+          <label for="name">Display name <span style="opacity:.6;">(optional)</span></label>
+          <input type="text" id="name" placeholder="e.g. Apple Inc.">
+
+          <label for="minBuy">Min. buying amount</label>
+          <input type="number" id="minBuy" step="0.01" min="0" required="" placeholder="0.00">
+
+          <label for="maxReach">Max. reach amount</label>
+          <input type="number" id="maxReach" step="0.01" min="0" required="" placeholder="0.00">
+
+          <button type="submit" class="primary-btn" id="submitBtn">Add stock</button>
+          <button type="button" class="secondary-btn" id="cancelEditBtn" style="display:none;">Cancel edit</button>
+        </form>
+      </div>
+
+      <div class="panel-box">
+        <h2>Your stocks</h2>
+        <table id="stockTable" style="display: table;">
+          <thead>
+            <tr><th>Symbol</th><th>Min buy</th><th>Max reach</th><th>Updated</th><th></th></tr>
+          </thead>
+          <tbody id="stockTableBody"><tr>
+      <td class="sym">EASEMYTRIP.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">Ease my trip NSE</div></td>
+      <td class="num">6.80</td>
+      <td class="num">8.12</td>
+      <td class="ts">Jul 13, 01:05 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="1958433f-9b6b-4967-ac67-afc512b091c6">Edit</button>
+          <button class="icon-btn danger" data-del="1958433f-9b6b-4967-ac67-afc512b091c6">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">GOLDBEES.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">GOLDBEES NSE</div></td>
+      <td class="num">118.00</td>
+      <td class="num">124.00</td>
+      <td class="ts">Jul 13, 01:06 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="6a517186-3c22-4fd4-b9fc-c4a57b8d9438">Edit</button>
+          <button class="icon-btn danger" data-del="6a517186-3c22-4fd4-b9fc-c4a57b8d9438">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">HCC.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">HCC NSE</div></td>
+      <td class="num">21.00</td>
+      <td class="num">27.00</td>
+      <td class="ts">Jul 13, 01:14 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="d4f3c8e1-9e4e-47c8-8b67-fa9dedddbb24">Edit</button>
+          <button class="icon-btn danger" data-del="d4f3c8e1-9e4e-47c8-8b67-fa9dedddbb24">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">IDEA.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">IDEA NSE</div></td>
+      <td class="num">10.95</td>
+      <td class="num">18.23</td>
+      <td class="ts">Jul 12, 09:24 PM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="7d237be2-bb37-4ad2-9aa5-b58125853ae1">Edit</button>
+          <button class="icon-btn danger" data-del="7d237be2-bb37-4ad2-9aa5-b58125853ae1">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">IDFCFIRSTB.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">IDFC FIRST BANK NSE</div></td>
+      <td class="num">64.00</td>
+      <td class="num">80.00</td>
+      <td class="ts">Jul 13, 01:09 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="c91be6e0-4afe-4cdc-9337-37f9806bbbb1">Edit</button>
+          <button class="icon-btn danger" data-del="c91be6e0-4afe-4cdc-9337-37f9806bbbb1">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">ITBEES.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">IT bees NSE</div></td>
+      <td class="num">30.84</td>
+      <td class="num">40.00</td>
+      <td class="ts">Jul 13, 01:02 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="42dc56d6-8731-4e84-a7a2-3168469a1870">Edit</button>
+          <button class="icon-btn danger" data-del="42dc56d6-8731-4e84-a7a2-3168469a1870">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">ITC.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">ITC NSE</div></td>
+      <td class="num">281.00</td>
+      <td class="num">347.00</td>
+      <td class="ts">Jul 13, 01:04 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="4743e47a-0b21-4695-ac1c-db5c9bee3ee3">Edit</button>
+          <button class="icon-btn danger" data-del="4743e47a-0b21-4695-ac1c-db5c9bee3ee3">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">KTKBANK.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">KTKBANK NSE</div></td>
+      <td class="num">206.00</td>
+      <td class="num">219.00</td>
+      <td class="ts">Jul 13, 01:12 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="e8863082-d4f5-4abd-b995-c67df4929c22">Edit</button>
+          <button class="icon-btn danger" data-del="e8863082-d4f5-4abd-b995-c67df4929c22">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">MANAPPURAM.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">Manappuram NSE</div></td>
+      <td class="num">293.00</td>
+      <td class="num">319.00</td>
+      <td class="ts">Jul 13, 01:10 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="26f80a22-49cd-4726-8a1c-986426b8d57c">Edit</button>
+          <button class="icon-btn danger" data-del="26f80a22-49cd-4726-8a1c-986426b8d57c">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">MOTHERSON.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">Motherson NSE</div></td>
+      <td class="num">142.00</td>
+      <td class="num">153.00</td>
+      <td class="ts">Jul 13, 01:03 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="114bdd47-03cb-42ce-a12d-5674ce491a85">Edit</button>
+          <button class="icon-btn danger" data-del="114bdd47-03cb-42ce-a12d-5674ce491a85">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">NATCOPHARM.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">Natco Pharm NSE</div></td>
+      <td class="num">810.00</td>
+      <td class="num">1,200.00</td>
+      <td class="ts">Jul 13, 01:11 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="99e9c8ee-be20-4b77-853a-84432fcc2202">Edit</button>
+          <button class="icon-btn danger" data-del="99e9c8ee-be20-4b77-853a-84432fcc2202">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">RTNINDIA.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">RTNINDIA NSE</div></td>
+      <td class="num">33.80</td>
+      <td class="num">39.00</td>
+      <td class="ts">Jul 13, 01:04 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="263a4b2a-6a3b-4e3d-ae6b-940fe866000c">Edit</button>
+          <button class="icon-btn danger" data-del="263a4b2a-6a3b-4e3d-ae6b-940fe866000c">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">SILVERBEES.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">Silverbees NSE</div></td>
+      <td class="num">218.00</td>
+      <td class="num">254.00</td>
+      <td class="ts">Jul 13, 01:18 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="db2569ee-bead-40db-bf03-92e9f43a408d">Edit</button>
+          <button class="icon-btn danger" data-del="db2569ee-bead-40db-bf03-92e9f43a408d">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">SOUTHBANK.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">South indian bank NSE</div></td>
+      <td class="num">42.00</td>
+      <td class="num">48.00</td>
+      <td class="ts">Jul 13, 01:13 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="c5541093-30d4-40c0-98ad-03f47398747e">Edit</button>
+          <button class="icon-btn danger" data-del="c5541093-30d4-40c0-98ad-03f47398747e">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">TEJASNET.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">Tejas net NSE</div></td>
+      <td class="num">400.00</td>
+      <td class="num">600.00</td>
+      <td class="ts">Jul 13, 01:07 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="a398f484-1284-4c2b-a2b6-ec187e7b79db">Edit</button>
+          <button class="icon-btn danger" data-del="a398f484-1284-4c2b-a2b6-ec187e7b79db">Delete</button>
+        </div>
+      </td></tr><tr>
+      <td class="sym">WIPRO.NS<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">WIPRO NSE</div></td>
+      <td class="num">185.00</td>
+      <td class="num">250.00</td>
+      <td class="ts">Jul 13, 12:59 AM</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="d116c32d-b394-4476-b21a-2d8c9cfa34c4">Edit</button>
+          <button class="icon-btn danger" data-del="d116c32d-b394-4476-b21a-2d8c9cfa34c4">Delete</button>
+        </div>
+      </td></tr></tbody>
+        </table>
+        <div id="manageEmpty" style="display:none;padding:30px 0;text-align:center;color:var(--paper-dim);font-family:'Inter';font-size:13px;">
+          No stocks yet — add one on the left.
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>Price feed settings</h2>
+    <div class="sub2">Live prices are pulled from Twelve Data's API via the server ckend. Get a free key at twelvedata.com — the free tier covers US-listed tickers reliably; non-US exchanges (like NSE/BSE) may need a paid plan or a symbol format such as <code>SYMBOL:EXCHANGE</code>.</div>
+    <label for="apiKey">Twelve Data API key</label>
+    <input type="password" id="apiKey" placeholder="paste your key">
+    <span class="toggle-visibility" id="toggleKeyVis">show key</span>
+    <div class="hint">Stored securely on the server backend database.</div>
+    <div class="modal-actions">
+    <button class="secondary-btn" id="closeSettingsBtn">Close</button>
+      <button class="primary-btn" id="saveSettingsBtn">Save key</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let stocks = [];
+let settings = { apiKey: '' };
+let editingId = null;
+
+// ---------- API Helpers ----------
+async function loadStocks(){
+  try{
+    const res = await fetch('/api/stocks');
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    stocks = data.map(s => ({
+      id: s.id,
+      symbol: s.symbol,
+      name: s.name,
+      minBuy: s.buy_amt,
+      maxReach: s.sell_amt,
+      updatedAt: s.updated_at,
+      lastPrice: s.last_price,
+      lastFetchedAt: s.last_fetched_at,
+      lastError: s.last_error
+    }));
+  }catch(e){
+    stocks = [];
+    showToast('Failed to load stocks from database.');
+  }
+}
+
+async function loadSettings(){
+  try{
+    const res = await fetch('/api/settings');
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    settings = { apiKey: data.apiKey || '' };
+  }catch(e){
+    settings = { apiKey: '' };
+  }
+}
+
+// ---------- utils ----------
+function fmtMoney(n){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtTs(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function showToast(msg){
+  const document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function signalFor(stock){
+  if(stock.lastPrice===undefined || stock.lastPrice===null) return null;
+  const p = stock.lastPrice;
+  if(p < stock.minBuy) return 'buy';
+  if(p > stock.maxReach) return 'sell';
+  return 'hold';
+}
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+document.getElementById('emptyAddBtn').addEventListener('click', ()=>{
+  document.querySelector('[data-view="manage"]').click();
+});
+
+// ---------- settings modal ----------
+const overlay = document.getElementById('settingsOverlay');
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  document.getElementById('apiKey').value = settings.apiKey || '';
+  overlay.classList.add('active');
+});
+document.getElementById('closeSettingsBtn').addEventListener('click', ()=>overlay.classList.remove('active'));
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.classList.remove('active'); });
+document.getElementById('toggleKeyVis').addEventListener('click', (e)=>{
+  const inp = document.getElementById('apiKey');
+  if(inp.type==='password'){ inp.type='text'; e.target.textContent='hide key'; }
+  else { inp.type='password'; e.target.textContent='show key'; }
+});
+document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
+  const apiKey = document.getElementById('apiKey').value.trim();
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey })
+    });
+    if (res.ok) {
+      settings.apiKey = apiKey;
+      overlay.classList.remove('active');
+      showToast('Settings saved.');
+      renderDashboard();
+    } else {
+      showToast('Failed to save API key.');
+    }
+  } catch (e) {
+    showToast('Network error saving settings.');
+  }
+});
+
+// ---------- CRUD form ----------
+const form = document.getElementById('stockForm');
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const symbol = document.getElementById('symbol').value.trim().toUpperCase();
+  const name = document.getElementById('name').value.trim();
+  const minBuy = parseFloat(document.getElementById('minBuy').value);
+  const maxReach = parseFloat(document.getElementById('maxReach').value);
+
+  if(isNaN(minBuy) || isNaN(maxReach)){ showToast('Enter valid numbers.'); return; }
+  if(maxReach <= minBuy){ showToast('Max reach must be greater than min buy.'); return; }
+
+  try {
+    if(editingId){
+      const res = await fetch(`/api/stocks/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, name, buy_amt: minBuy, sell_amt: maxReach })
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        showToast(result.error || 'Failed to update stock.');
+        return;
+      }
+      showToast('Stock updated.');
+    } else {
+      const res = await fetch('/api/stocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, name, buy_amt: minBuy, sell_amt: maxReach })
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        showToast(result.error || 'Failed to add stock.');
+        return;
+      }
+      showToast('Stock added.');
+    }
+    
+    await loadStocks();
+    resetForm();
+    renderManageTable();
+    renderDashboard();
+  } catch (e) {
+    showToast('Network error processing request.');
+  }
+});
+
+document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+
+function resetForm(){
+  editingId = null;
+  form.reset();
+  document.getElementById('stockId').value = '';
+  document.getElementById('formTitle').textContent = 'Add a stock';
+  document.getElementById('submitBtn').textContent = 'Add stock';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+function editStock(id){
+  const s = stocks.find(x=>x.id===id);
+  if(!s) return;
+  editingId = id;
+  document.getElementById('symbol').value = s.symbol;
+  document.getElementById('name').value = s.name || '';
+  document.getElementById('minBuy').value = s.minBuy;
+  document.getElementById('maxReach').value = s.maxReach;
+  document.getElementById('formTitle').textContent = 'Edit stock';
+  document.getElementById('submitBtn').textContent = 'Save changes';
+  document.getElementById('cancelEditBtn').style.display = 'block';
+  document.querySelector('[data-view="manage"]').click();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteStock(id){
+  if(!confirm('Remove this stock from the ledger?')) return;
+  try {
+    const res = await fetch(`/api/stocks/${id}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      showToast('Stock removed.');
+      await loadStocks();
+      renderManageTable();
+      renderDashboard();
+    } else {
+      showToast('Failed to remove stock.');
+    }
+  } catch (e) {
+    showToast('Network error removing stock.');
+  }
+}
+
+// ---------- render: manage table ----------
+function renderManageTable(){
+  const tbody = document.getElementById('stockTableBody');
+  const empty = document.getElementById('manageEmpty');
+  tbody.innerHTML = '';
+  if(stocks.length===0){ empty.style.display='block'; document.getElementById('stockTable').style.display='none'; return; }
+  empty.style.display='none';
+  document.getElementById('stockTable').style.display='table';
+
+  stocks.slice().sort((a,b)=>a.symbol.localeCompare(b.symbol)).forEach(s=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="sym">${s.symbol}${s.name ? `<div style="font-family:Inter;font-size:11px;color:var(--paper-dim);font-weight:400;margin-top:2px;">${s.name}</div>` : ''}</td>
+      <td class="num">${fmtMoney(s.minBuy)}</td>
+      <td class="num">${fmtMoney(s.maxReach)}</td>
+      <td class="ts">${fmtTs(s.updatedAt)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="${s.id}">Edit</button>
+          <button class="icon-btn danger" data-del="${s.id}">Delete</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>editStock(b.dataset.edit)));
+  tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>deleteStock(b.dataset.del)));
+}
+
+// ---------- render: dashboard ----------
+function renderDashboard(){
+  const grid = document.getElementById('dashGrid');
+  const emptyEl = document.getElementById('dashEmpty');
+  const tally = document.getElementById('tally');
+  const refreshBar = document.getElementById('refreshBar');
+
+  if(stocks.length===0){
+    grid.innerHTML=''; emptyEl.style.display='block'; tally.style.display='none'; refreshBar.style.display='none';
+    return;
+  }
+  emptyEl.style.display='none'; tally.style.display='flex'; refreshBar.style.display='flex';
+
+  let buyN=0, sellN=0, holdN=0;
+  grid.innerHTML='';
+  stocks.slice().sort((a,b)=>a.symbol.localeCompare(b.symbol)).forEach(s=>{
+    const sig = signalFor(s);
+    if(sig==='buy') buyN++;
+    if(sig==='sell') sellN++;
+    if(sig==='hold') holdN++;
+
+    const card = document.createElement('div');
+    card.className='card';
+    let stampHtml, priceHtml;
+
+    if(s.lastError){
+      stampHtml = `<span class="stamp pending">error</span>`;
+      priceHtml = `<div class="price err">${s.lastError}</div>`;
+    } else if(sig===null){
+      stampHtml = `<span class="stamp pending">no data</span>`;
+      priceHtml = `<div class="price err">Refresh to fetch a live price</div>`;
+    } else {
+      const label = sig==='buy' ? 'Buy' : sig==='sell' ? 'Sell' : 'Coffee can';
+      stampHtml = `<span class="stamp ${sig}">${label}</span>`;
+      priceHtml = `<div class="price">${fmtMoney(s.lastPrice)}</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div>
+          <div class="ticker">${s.symbol}</div>
+          ${s.name ? `<div class="name">${s.name}</div>` : ''}
+        </div>
+        ${stampHtml}
+      </div>
+      <div class="price-row">
+        ${priceHtml}
+        <div class="fetched-at">${s.lastFetchedAt ? 'fetched ' + fmtTs(s.lastFetchedAt) : 'not yet fetched'}</div>
+      </div>
+      <div class="thresholds">
+        <div class="t"><span>Min buy</span><b>${fmtMoney(s.minBuy)}</b></div>
+        <div class="t right"><span>Max reach</span><b>${fmtMoney(s.maxReach)}</b></div>
+      </div>
+      <div class="updated-line">record updated ${fmtTs(s.updatedAt)}</div>
+      <div class="card-actions">
+        <button class="mini-btn" data-refresh="${s.id}">↻ Refresh</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  document.getElementById('tallyBuy').textContent = buyN;
+  document.getElementById('tallySell').textContent = sellN;
+  document.getElentById('tallyHold').textContent = holdN;
+
+  grid.querySelectorAll('[data-refresh]').forEach(b=>{
+    b.addEventListener('click', ()=>fetchPrices([b.dataset.refresh]));
+  });
+
+  document.getElementById('refreshNote').textContent =
+    stocks.some(s=>s.lastFetchedAt) ? 'Live prices via Twelve Data' : 'No prices fetched yet — click Refresh all';
+}
+
+// ---------- price fetching ----------
+document.getElementById('refreshAllBtn').addEventListener('click', ()=>{
+  fetchPrices(stocks.map(s=>s.id));
+});
+
+async fction fetchPrices(ids){
+  if(!settings.apiKey){
+    showToast('Add a Twelve Data API key in Settings first.');
+    document.getElementById('settingsBtn').click();
+    return;
+  }
+  const targets = stocks.filter(s=>ids.includes(s.id));
+  if(targets.length===0) return;
+
+  document.getElementById('refreshNote').textContent = 'Fetching…';
+
+  try{
+    let url = '/api/stocks/refresh';
+    let options = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id ids })
+    };
+    
+    // Single stock refresh optimized endpoint
+    if (ids.length === 1) {
+      url = `/api/stocks/${ids[0]}/refresh`;
+      options = { method: 'POST' };
+    }
+    
+    const resp = await fetch(url, options);
+    const updatedData = await resp.json();
+    
+    if (!resp.ok) {
+      showToast(updatedData.error || 'Fetch prices failed.');
+      document.getElementById('refreshNote').textContent = 'Fetch failed — try again';
+      return;
+    }
+    
+    await loadStocks();
+    renderDasoard();
+    showToast(`Updated ${targets.length} stock${targets.length>1?'s':''}.`);
+  }catch(e){
+    showToast('Network error fetching prices.');
+    document.getElementById('refreshNote').textContent = 'Fetch failed — try again';
+  }
+}
+
+// ---------- init ----------
+(async function init(){
+  await loadSettings();
+  await loadStocks();
+  renderManageTable();
+  renderDashboard();
+})();
+</script>
+
+
+</body></html>
